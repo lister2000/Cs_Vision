@@ -686,6 +686,15 @@ namespace Cs_Vision
                     }
                 }
             }
+        }
+
+        private void cur_textBox_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (csp.current_csdata != null)
+            {
+                groupBox2.Text = csp.namedatas[text_id];
+                cur_textBox.Text= csp.current_csdata.markdatas[text_id].ToString();
+            }
 
         }
 
