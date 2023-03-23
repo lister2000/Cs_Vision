@@ -15,10 +15,13 @@ namespace Cs_Vision
 		public int region_light= 0;
 		public int obj2distance= 0;
 		public float obj2angle = 0 ;
-		public float[] markdatas = new float[9];
+		public float[] markdatas = new float[9]{ 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 		public PolyFeature data_feat = new PolyFeature();
-		public CsDatas() {}
+		public CsDatas() 
+		{
+			count = 0;
+		}
 		public CsDatas(int icount, Rect irect, Mat imat,PolyFeature df)
         {
 			data_feat = df;

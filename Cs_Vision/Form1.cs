@@ -686,7 +686,24 @@ namespace Cs_Vision
                     }
                 }
             }
+        }
 
+        private void cur_textBox_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (csp.current_csdata != null)
+            {
+                groupBox2.Text = csp.namedatas[text_id];
+                cur_textBox.Text= csp.current_csdata.markdatas[text_id].ToString();
+            }
+
+        }
+
+        private void ±£¥ÊToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string filePath = @"D:\data.json";
+            CsSaver cs_saver = new CsSaver(csp.dict_polys, csp.some_rects);
+
+            CsSaver.WriteToFile(cs_saver, filePath);
         }
 
         //protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

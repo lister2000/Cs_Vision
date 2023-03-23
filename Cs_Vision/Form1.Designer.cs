@@ -326,6 +326,7 @@
             this.cur_textBox.ReadOnly = true;
             this.cur_textBox.Size = new System.Drawing.Size(90, 30);
             this.cur_textBox.TabIndex = 20;
+            this.cur_textBox.MouseClick += new System.Windows.Forms.MouseEventHandler(this.cur_textBox_MouseClick);
             // 
             // min_label
             // 
