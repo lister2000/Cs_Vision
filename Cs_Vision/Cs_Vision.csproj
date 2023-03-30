@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="DlibDotNet" Version="19.21.0.20220724" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.6.0.20220608" />
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.6.0.20220608" />
   </ItemGroup>

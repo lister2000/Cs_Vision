@@ -122,14 +122,16 @@
             // 保存ToolStripMenuItem
             // 
             this.保存ToolStripMenuItem.Name = "保存ToolStripMenuItem";
-            this.保存ToolStripMenuItem.Size = new System.Drawing.Size(146, 34);
+            this.保存ToolStripMenuItem.Size = new System.Drawing.Size(270, 34);
             this.保存ToolStripMenuItem.Text = "保存";
+            this.保存ToolStripMenuItem.Click += new System.EventHandler(this.保存ToolStripMenuItem_Click);
             // 
             // 读取ToolStripMenuItem
             // 
             this.读取ToolStripMenuItem.Name = "读取ToolStripMenuItem";
-            this.读取ToolStripMenuItem.Size = new System.Drawing.Size(146, 34);
+            this.读取ToolStripMenuItem.Size = new System.Drawing.Size(270, 34);
             this.读取ToolStripMenuItem.Text = "读取";
+            this.读取ToolStripMenuItem.Click += new System.EventHandler(this.读取ToolStripMenuItem_Click);
             // 
             // 编辑EToolStripMenuItem
             // 

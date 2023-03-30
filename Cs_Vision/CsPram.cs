@@ -35,6 +35,8 @@ namespace Cs_Vision
 		public Mat hsv_image = new();
 		public Bitmap bitmap = new(1,1);
 
+		public RotatedRect rbb=new RotatedRect();
+
 		public Scalar black_color  = new Scalar(0, 0, 0);
 		public Scalar white_color  = new Scalar(255, 255, 255);
 		public Scalar pink_color   = new Scalar(255, 0, 255);
@@ -48,9 +50,9 @@ namespace Cs_Vision
 		public Scalar gray_100 = new Scalar(100, 100, 100);
 		public Scalar gray_200 = new Scalar(200, 200, 200);
 		
-		public enum PICKTYPE { 未知形状, 多边形边, 旋转矩形 };
+		public enum PICKTYPE { 未知形状=0, 多边形边=1, 旋转矩形=2 };
 
-		public List<poly_feture> dict_polys = new List<poly_feture>();
+		public List<poly_class>  dict_cpoly = new List<poly_class>();
 		public List<CsRegion>    some_rects = new List<CsRegion>();
 
 		public bool is_textupdate = false;
@@ -61,6 +63,7 @@ namespace Cs_Vision
 		public bool is_dellregion = false;
 		public bool is_trackeron  = false;
 		public bool is_trackerrun = false;
+		public bool is_loaddatas = false;
 
 		public string[] namedatas = new string[9] { "位置 X","距离 D","亮度 L", "位置 Y", "面积 S", "数量 N", "角度 A", "宽度 W", "高度 H" };
 		public int izoomVal = 3;
@@ -76,10 +79,12 @@ namespace Cs_Vision
 
 		public VideoCapture videocap = new VideoCapture(0);
 
-		public CsDatas? current_csdata;
+		///public CsDatas? current_csdata;//vvv1
+		public CcDatas? current_csdata;
 		public Mat cam_coodinate_mat = new Mat(9, 2, MatType.CV_64F, new Scalar(0));
 		public Mat rot_coodinate_mat = new Mat(9, 2, MatType.CV_64F, new Scalar(0));
 	}
+	[Serializable]
 	public class pick_rect
 	{
 		public int index = -1;
@@ -90,29 +95,34 @@ namespace Cs_Vision
 		{
 		}
 	}
-	public class poly_feture
+
+	[Serializable]
+	public class poly_class
 	{
-		public int index = 0 ;
-		public Rect rect = new Rect();
-		public PolyFeature feat = new PolyFeature();
-		public poly_feture(PolyFeature ft)
+		public int index = 0;
+		public Rect region = new Rect();
+		public PolyClass feat = new PolyClass();
+		public poly_class(PolyClass fs)
 		{
-			index = ft.region_index;
-			rect  = ft.region_rect;
-			feat  = ft;
+			index  = fs.region_index;
+			region = fs.region_rect;
+			feat   = fs;
 		}
 	}
 
+
+	[Serializable]
 	public class CsRegion
 	{
-		public int type;
+		public int type;//是否跟踪
 		public int index;
 		public int value;
 		public Scalar ok_ng = Scalar.Gray;
 		public Rect rect;
 		public Vec3b color;
+		[NonSerialized]
 		public AsDll.AsDlib tracker = new AsDll.AsDlib();
-		public CsDatas csdata = new CsDatas();
+		public CcDatas csdata  = new CcDatas();//vvv
 		public float[] mindatas = new float[9];
 		public float[] maxdatas = new float[9];
 

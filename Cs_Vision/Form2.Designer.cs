@@ -188,7 +188,7 @@
             this.trackBar5.Size = new System.Drawing.Size(279, 69);
             this.trackBar5.TabIndex = 12;
             this.trackBar5.Value = 50;
-            this.trackBar5.SizeChanged += new System.EventHandler(this.trackBar5_Scroll);
+            this.trackBar5.Scroll += new System.EventHandler(this.trackBar5_Scroll);
             // 
             // Form2
             // 

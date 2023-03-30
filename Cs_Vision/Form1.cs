@@ -47,6 +47,7 @@ namespace Cs_Vision
             IniteUI();
             is_inited = true;
             timerThread.Start();
+
         }
 
         private void MainWindow_SizeChanged(object sender, EventArgs e)
@@ -152,11 +153,10 @@ namespace Cs_Vision
                     }
                     else
                     {
-                        csp.dict_polys.Clear();
+                        csp.dict_cpoly.Clear();
                         for (int i = 0; i < csp.some_rects.Count; i++)
                         {
                             csp.some_rects[i].csdata.markdatas = new float[9] { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
                         }
                     }
                 }
@@ -238,7 +238,30 @@ namespace Cs_Vision
                     csp.is_trackeron = csp.is_trackerrun = false;
                     csp.draw_rect = csp.pickregion.region = new Rect();
                     csp.some_rects.Clear();
-                    csp.dict_polys.Clear();
+                    csp.dict_cpoly.Clear();
+
+                }
+                if (csp.is_loaddatas)
+                {
+                    //跨线程数据同步
+                    csp.is_trackeron = csp.is_trackerrun = false;
+                    csp.draw_rect = csp.pickregion.region = new Rect();
+                    csp.some_rects.Clear();
+                    csp.dict_cpoly.Clear();
+                    csp.is_loaddatas = false;
+                    csp.some_rects=  PolyClass.LoadSomeRects("rect_datas");
+                    csp.dict_cpoly = PolyClass.LoadDictPoly("dict_datas");
+                    csp.pickregion = PolyClass.pick_irect;
+
+                    for (int i = 0; i < csp.some_rects.Count; i++)
+                    {
+                        if (csp.some_rects[i].type == 1)
+                        {
+                            csp.some_rects[i].tracker = new AsDll.AsDlib();
+                            csp.some_rects[i].tracker.TrackOn(csp.frame_image, csp.some_rects[i].rect);
+                            csp.is_trackerrun = true;
+                        }
+                    }
                 }
                 if (csp.run_loop)
                 {
@@ -249,7 +272,7 @@ namespace Cs_Vision
                     csp.izoomVal = csp.frame_image.Cols / 320;
                     Cv2.CopyTo(csp.frame_image, csp.result_image);
                     Cv2.CvtColor(csp.frame_image, csp.hsv_image, ColorConversionCodes.BGR2HSV);
-                    if (csp.pickregion.region.Width * csp.pickregion.region.Height > csp.AREA3600)
+                    if (csp.pickregion.region.Width * csp.pickregion.region.Height > csp.AREA3600||csp.some_rects.Count>0)
                     {
                         for (int i = 0; i < csp.some_rects.Count; i++)
                         {
@@ -310,9 +333,9 @@ namespace Cs_Vision
                                     if (csp.some_rects[i].index == csp.pickregion.index)
                                     {
                                         csp.some_rects.RemoveAt(i);
-                                        for (int j = csp.dict_polys.Count - 1; j >= 0; j--)
+                                        for (int j = csp.dict_cpoly.Count - 1; j >= 0; j--)
                                         {
-                                            if (csp.dict_polys[j].index == csp.pickregion.index) csp.dict_polys.RemoveAt(j);
+                                            if (csp.dict_cpoly[j].index == csp.pickregion.index) csp.dict_cpoly.RemoveAt(j);
                                         }
                                         break;
                                     }
@@ -322,15 +345,15 @@ namespace Cs_Vision
                                     csp.pickregion.region = csp.some_rects[i].rect;
                                     csp.some_rects[i].index = csp.pickregion.index = i;
                                     csp.pickregion.type = csp.some_rects[i].type;
-                                    for (int j = csp.dict_polys.Count - 1; j >= 0; j--)
+                                    for (int j = csp.dict_cpoly.Count - 1; j >= 0; j--)
                                     { 
-                                        csp.dict_polys[j].index = i;//重新分配
+                                        csp.dict_cpoly[j].index = i;//重新分配
                                     }
                                 }
                             }
                             if (csp.some_rects.Count == 0)
                             {
-                                csp.dict_polys.Clear();
+                                csp.dict_cpoly.Clear();
                                 csp.pickregion.region = new Rect();
                                 csp.pickregion.type = -1;
                             }
@@ -441,7 +464,7 @@ namespace Cs_Vision
                 {
                     if (csp.some_rects[n].index == csp.pickregion.index)
                     {
-                        csp.current_csdata = csp.some_rects[n].csdata;
+                        csp.current_csdata = csp.some_rects[n].csdata;//vvv3
                         data_textBox1.Text = csp.current_csdata.markdatas[0].ToString();
                         data_textBox2.Text = csp.current_csdata.markdatas[1].ToString();
                         data_textBox3.Text = csp.current_csdata.markdatas[2].ToString();
@@ -543,7 +566,7 @@ namespace Cs_Vision
             if (e.KeyCode == Keys.D)
             {
                 csp.is_dellregion = true;
-                csp.dict_polys.Clear();
+                csp.dict_cpoly.Clear();
             }
             if (e.KeyCode == Keys.ShiftKey)
             {
@@ -553,7 +576,7 @@ namespace Cs_Vision
             if (e.KeyCode == Keys.Space)
             {
                 csp.is_moreselect = !csp.is_moreselect;
-                csp.dict_polys.Clear();
+                csp.dict_cpoly.Clear();
 
                 System.Drawing.Size screen = Screen.PrimaryScreen.Bounds.Size;
                 this.Width = (int)(screen.Width * 0.8f);
@@ -700,10 +723,15 @@ namespace Cs_Vision
 
         private void 保存ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string filePath = @"D:\data.json";
-            CsSaver cs_saver = new CsSaver(csp.dict_polys, csp.some_rects);
+            PolyClass.pick_irect = csp.pickregion;
+            if (csp.some_rects.Count > 0) PolyClass.SaveDictPoly("dict_datas", csp.dict_cpoly);
+            if (csp.some_rects.Count>0)  PolyClass.SaveSomeRects("rect_datas",csp.some_rects);
+        }
 
-            CsSaver.WriteToFile(cs_saver, filePath);
+        private void 读取ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            csp.is_loaddatas = true;
+  
         }
 
         //protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

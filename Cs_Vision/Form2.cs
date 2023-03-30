@@ -40,11 +40,11 @@ namespace Cs_Vision
             label_thldval.Text = trackBar1.Value.ToString();
             csp.some_rects[csp.pickregion.index].value = trackBar1.Value;
 
-            for (int i = csp.dict_polys.Count - 1; i >= 0; i--)
+            for (int i = csp.dict_cpoly.Count - 1; i >= 0; i--)
             {
-                if (csp.pickregion.region.Size == csp.dict_polys[i].rect.Size)
+                if (csp.pickregion.region.Size == csp.dict_cpoly[i].region.Size)
                 {
-                    csp.dict_polys.RemoveAt(i);
+                    csp.dict_cpoly.RemoveAt(i);
                 }
             }
         }
@@ -53,28 +53,27 @@ namespace Cs_Vision
         {
             csp.areasMin = trackBar2.Value;
             label_minareaval.Text = trackBar2.Value.ToString();
-            csp.dict_polys.Clear();
+            csp.dict_cpoly.Clear();
         }
 
         private void trackBar3_Scroll(object sender, EventArgs e)
         {
             csp.areasMax = trackBar3.Value;
             label_maxareaval.Text = trackBar3.Value.ToString();
-            csp.dict_polys.Clear();
+            csp.dict_cpoly.Clear();
         }
 
         private void trackBar4_Scroll(object sender, EventArgs e)
         {
             csp.alike60 = trackBar4.Value;
             label_alikeval.Text = trackBar4.Value.ToString();
-            csp.dict_polys.Clear();
+            csp.dict_cpoly.Clear();
         }
-
         private void trackBar5_Scroll(object sender, EventArgs e)
         {
             csp.asideVal = trackBar5.Value;
             label_sideval.Text = trackBar5.Value.ToString();
-            csp.dict_polys.Clear();
+            csp.dict_cpoly.Clear();
         }
     }
 }

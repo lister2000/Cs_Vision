@@ -7,7 +7,7 @@ using System.Linq;
 //using OpenCvSharp.Dnn;
 using OpenCvSharp;
 using OpenCvSharp.XFeatures2D;
-
+using Point = OpenCvSharp.Point;
 namespace Cs_Vision
 {
 	public class CsTools
@@ -20,7 +20,7 @@ namespace Cs_Vision
 			get { return instance; }
 			set { instance = value; }
 		}
-		public float Angle2(OpenCvSharp.Point c, OpenCvSharp.Point p, int type)
+		public static float Angle2(OpenCvSharp.Point c, OpenCvSharp.Point p, int type)
 		{
 			float dx = c.X - p.X;
 			float dy = c.Y - p.Y;
@@ -41,7 +41,7 @@ namespace Cs_Vision
 
 			return angle;
 		}
-		float Angle3(OpenCvSharp.Point cen, OpenCvSharp.Point first, OpenCvSharp.Point second)
+		public static float Angle3(OpenCvSharp.Point cen, OpenCvSharp.Point first, OpenCvSharp.Point second)
 		{
 			float dx1, dx2, dy1, dy2;
 			float angle;
@@ -54,7 +54,7 @@ namespace Cs_Vision
 			angle = (float)Math.Acos((dx1 * dx2 + dy1 * dy2) / c);
 			return angle / (float)Cv2.PI * 180.0f; ;
 		}
-		public int Distance(OpenCvSharp.Point pointO, OpenCvSharp.Point pointA)
+		public static int Distance(OpenCvSharp.Point pointO, OpenCvSharp.Point pointA)
 		{
 			return (int)Math.Sqrt(Math.Pow((pointO.X - pointA.X), 2) + Math.Pow((pointO.Y - pointA.Y), 2));
 		}
@@ -182,37 +182,26 @@ namespace Cs_Vision
 			Cv2.Normalize(hist_test1, hist_test1, 0, 1, NormTypes.MinMax, -1, null);
 			return (float)Cv2.CompareHist(hist_base, hist_test1, HistCompMethods.Correl);
 		}
-		public bool TestScore(PolyFeature last, PolyFeature curr, int limit)
+		public bool TestScore(PolyClass last, PolyClass curr, int limit)
 		{
 			int score = 0;
-            if (last.region_index == curr.region_index)
-            {
+			if (last.region_index == curr.region_index) score += 15;
+			if (last.region_rect  == curr.region_rect)  score += 15;
 
-            }
-			float alike_hist = HsvHist(last.poly_mat, curr.poly_mat);
-			if (alike_hist > 0.8f)score += 20;
-
-			float alike_light = Math.Abs(last.poly_light - curr.poly_light);
-			if (Math.Abs(last.poly_light - curr.poly_light) < 8)score += 10;
-
-			float alike_area = Math.Abs((last.poly_area - curr.poly_area) / (float)last.poly_area);
-			if (Math.Abs((last.poly_area - curr.poly_area) / (float)last.poly_area) < 0.01)score += 20;
-	
-			float alike_circum = Math.Abs(last.poly_circum - curr.poly_circum) / (float)last.poly_circum;
-			if (Math.Abs(last.poly_circum - curr.poly_circum) / (float)last.poly_circum < 0.01)score += 20;
-
+			if (Math.Abs((Cv2.ContourArea(last.poly_points) - curr.poly_area) / curr.poly_area) < 0.01) score += 15;
+			if (Math.Abs(Cv2.ArcLength(last.poly_points, true) - curr.poly_circum) / curr.poly_circum < 0.01) score += 15;
 
 			float alike_width = Math.Abs(curr.poly_rbox.Size.Width - last.poly_rbox.Size.Width) / (float)last.poly_rbox.Size.Width;
 			float alike_height = Math.Abs(curr.poly_rbox.Size.Height - last.poly_rbox.Size.Height) / (float)last.poly_rbox.Size.Height;
-			if (alike_width < 0.05 && alike_height < 0.05)score += 10;
+			if (alike_width < 0.05 && alike_height < 0.05) score += 20;
 
-			float alike_size = Math.Abs(last.poly_gon.Length - curr.poly_gon.Length);
-			if (alike_size == 0)score += 20;
-
+			if (Math.Abs(last.poly_points.Length - curr.poly_points.Length) == 0) score += 20;
+			 
 			curr.poly_alike = score;
 
 			return score > limit;
 		}
+
 		public void oneCross(Mat img, OpenCvSharp.Point pt, Scalar cl, int zm)
 		{
 			Cv2.Line(img, new OpenCvSharp.Point(pt.X - zm * 4, pt.Y), new OpenCvSharp.Point(pt.X + zm * 4, pt.Y), cl, zm);
@@ -232,33 +221,38 @@ namespace Cs_Vision
 			//Console.WriteLine("ka: "+ ka + " kb: " + kb + " icross: " + crossPoint);
 			return (OpenCvSharp.Point)crossPoint;
 		}
-		public void TestMeasure(Mat region_mat, Mat region_mask,int region_index)
+
+		public void TestMeasure(Mat region_mat, Mat region_mask, int region_index)
 		{
-			Mat[] contours;
-			Mat hierarchy = new Mat();
-			List<PolyFeature> curr_feats = new List<PolyFeature>();
-			Cv2.FindContours(region_mask, out contours, hierarchy, RetrievalModes.Tree, ContourApproximationModes.ApproxSimple);
+			OpenCvSharp.Point[][] contours;
+			HierarchyIndex[] hierarchy;
+			List<PolyClass> curr_feats = new List<PolyClass>();
+			Cv2.FindContours(region_mask, out contours, out hierarchy, RetrievalModes.Tree, ContourApproximationModes.ApproxSimple);
+
+			//特征处理
 			Rect region_rect = csp.some_rects[region_index].rect;
 			for (int i = 0; i < contours.Length; i++)
 			{
 				RotatedRect rbox = Cv2.MinAreaRect(contours[i]);
-				float rarea = (rbox.Size.Width + rbox.Size.Height) / (region_mask.Rows + region_mask.Cols) * 100;
-				if (rarea > csp.areasMin  && rarea < csp.areasMax)
+				float rarea = (rbox.Size.Width + rbox.Size.Height) / (region_rect.Width + region_rect.Height) * 100;
+				if (rarea > csp.areasMin && rarea < csp.areasMax)
 				{
-					Mat poly = contours[i].ApproxPolyDP(csp.asideVal, true);
-					PolyFeature pfeat = new PolyFeature(region_rect,region_index, poly, rbox, region_mat);
+					//double epsilon = 0.01 * Cv2.ArcLength(contours[i], true);
+					OpenCvSharp.Point[] poly = Cv2.ApproxPolyDP(contours[i], csp.asideVal, true);
+					PolyClass pclass = new PolyClass(region_index, region_rect, poly);
 					if (curr_feats.Count < 9)
 					{
-						curr_feats.Add(pfeat);
-                        if (!csp.is_moreselect)
-                        {
-							Cv2.Polylines(region_mat, poly, true, csp.yellow_color, csp.izoomVal);
-							Cv2.Circle(region_mat, pfeat.poly_gon[0], csp.izoomVal * 2, csp.yellow_color, csp.izoomVal);
+						curr_feats.Add(pclass);
+						if (!csp.is_moreselect)
+						{
+							//new OpenCvSharp.Point[][] { poly }
+							Cv2.Polylines(region_mat, Enumerable.Repeat(poly, 1), true, csp.yellow_color, csp.izoomVal);
+							Cv2.Circle(region_mat, pclass.poly_points[0], csp.izoomVal * 2, csp.yellow_color, csp.izoomVal);
 						}
-                        else
-                        {
+						else
+						{
 							Point2f[] P = rbox.Points();
-							for (int p = 0; p < P.Length; p++)Cv2.Line(region_mat, (OpenCvSharp.Point)P[p], (OpenCvSharp.Point)P[(p + 1) % 4], csp.yellow_color, csp.izoomVal);
+							for (int p = 0; p < P.Length; p++) Cv2.Line(region_mat, (OpenCvSharp.Point)P[p], (OpenCvSharp.Point)P[(p + 1) % 4], csp.yellow_color, csp.izoomVal);
 						}
 					}
 				}
@@ -276,13 +270,13 @@ namespace Cs_Vision
 					int mark_id = -1;
 					if (!csp.is_moreselect)
 					{
-						for (int vex_id = 0; vex_id < curr_feats[i].poly_gon.Length; vex_id++)
+						for (int vex_id = 0; vex_id < curr_feats[i].poly_points.Length; vex_id++)
 						{
-							int next_id = (vex_id + 1) % curr_feats[i].poly_gon.Length;
-							if (Angle3(local_point, curr_feats[i].poly_gon[vex_id], curr_feats[i].poly_gon[next_id]) > 160)
+							int next_id = (vex_id + 1) % curr_feats[i].poly_points.Length;
+							if (Angle3(local_point, curr_feats[i].poly_points[vex_id], curr_feats[i].poly_points[next_id]) > 160)
 							{
-								curr_feats[i].line_type = (int)CsPram.PICKTYPE.多边形边;
-								curr_feats[i].line_id = mark_id = vex_id;
+								curr_feats[i].poly_type = (int)CsPram.PICKTYPE.多边形边;
+								curr_feats[i].edge_id = mark_id = vex_id;
 								break;
 							}
 						}
@@ -294,8 +288,8 @@ namespace Cs_Vision
 						{
 							if (Angle3(local_point, (OpenCvSharp.Point)vertex2f[bx], (OpenCvSharp.Point)vertex2f[(bx + 1) % 4]) > 170)
 							{
-								curr_feats[i].line_type = (int)CsPram.PICKTYPE.旋转矩形;
-								curr_feats[i].line_id = mark_id = 0;
+								curr_feats[i].poly_type = (int)CsPram.PICKTYPE.旋转矩形;
+								curr_feats[i].edge_id = mark_id = 0;
 								break;
 							}
 						}
@@ -303,15 +297,15 @@ namespace Cs_Vision
 					//删除重复
 					if (mark_id != -1)
 					{
-						for (int old = csp.dict_polys.Count - 1; old >= 0; old--)
+						for (int old = csp.dict_cpoly.Count - 1; old >= 0; old--)
 						{
-							if (csp.dict_polys[old].index == region_index)
+							if (csp.dict_cpoly[old].index == region_index)
 							{
-								if (TestScore(csp.dict_polys[old].feat, curr_feats[i], csp.alike60))
+								if (TestScore(csp.dict_cpoly[old].feat, curr_feats[i], csp.alike60))
 								{
-									if (csp.dict_polys[old].feat.line_id == mark_id)
+									if (csp.dict_cpoly[old].feat.edge_id == mark_id)
 									{
-										csp.dict_polys.RemoveAt(old);
+										csp.dict_cpoly.RemoveAt(old);
 										mark_id = -1;
 										break;
 									}
@@ -321,40 +315,27 @@ namespace Cs_Vision
 					}
 					if (mark_id > -1)
 					{
-						csp.dict_polys.Add(new poly_feture(curr_feats[i]));
+						csp.dict_cpoly.Add(new poly_class(curr_feats[i]));
 						break;
 					}
 				}
 			}
-            if (false)
-            {
-				curr_feats.Sort(delegate (PolyFeature x, PolyFeature y)
-				{
-					if (x.poly_area > y.poly_area) return -1; else return 1;
-				});
-				for (int i = 0; i < curr_feats.Count; i++)
-				{
-					if (csp.dict_polys.Count == 0) Cv2.PutText(csp.result_image, ("" + i),
-						 new OpenCvSharp.Point(curr_feats[i].ploy_center.X + region_rect.X, curr_feats[i].ploy_center.Y + region_rect.Y),
-						 HersheyFonts.HersheyPlain, csp.izoomVal, csp.green_color, csp.izoomVal);
-				}
-			}
 
 			//打包数据
-			CsDatas csdata = new CsDatas(curr_feats.Count, region_rect, region_mat, curr_feats[0]);
-			
-			if (csp.dict_polys.Count > 0)
+
+			CcDatas csdata = new CcDatas(curr_feats.Count, region_rect, RegionLight(region_mat), curr_feats[0]);
+
+			if (csp.dict_cpoly.Count > 0)
 			{
 				//标记选择
-				PolyFeature pick_feat =  new PolyFeature();
-				for (int i = 0; i < csp.dict_polys.Count; i++)
+				PolyClass pick_feat = new PolyClass();
+				for (int i = 0; i < csp.dict_cpoly.Count; i++)
 				{
-					if (region_index == csp.dict_polys[i].index)
+					if (region_index == csp.dict_cpoly[i].index)
 					{
-						pick_feat = csp.dict_polys[i].feat; 
-						PolyFeature dict_feat = csp.dict_polys[i].feat;
-						csdata.data_feat = csp.dict_polys[i].feat;
-						if (dict_feat.line_type == (int)CsPram.PICKTYPE.多边形边 && !csp.is_moreselect)
+						pick_feat = csp.dict_cpoly[i].feat;
+						csdata.data_feat = csp.dict_cpoly[i].feat;
+						if (pick_feat.poly_type == (int)CsPram.PICKTYPE.多边形边 && !csp.is_moreselect)
 						{
 							//Mat mat = new Mat(region_mat.Size(), MatType.CV_8UC1);
 							//List<OpenCvSharp.Point[]> npts = new List<OpenCvSharp.Point[]>();
@@ -363,89 +344,89 @@ namespace Cs_Vision
 							//Mat[] channels = Cv2.Split(region_mat);
 							//channels[0] += mat;
 							//Cv2.Merge(channels, region_mat);
-							int next_id = (dict_feat.line_id + 1) % dict_feat.poly_gon.Length;
-							Cv2.Line(region_mat, dict_feat.poly_gon[dict_feat.line_id], dict_feat.poly_gon[next_id], csp.blue_150, csp.izoomVal*2);
+							int next_id = (pick_feat.edge_id + 1) % pick_feat.poly_points.Length;
+							Cv2.Line(region_mat, pick_feat.poly_points[pick_feat.edge_id], pick_feat.poly_points[next_id], csp.blue_150, csp.izoomVal * 2);
 						}
-						else if (dict_feat.line_type == (int)CsPram.PICKTYPE.旋转矩形 && csp.is_moreselect)
+						else if (pick_feat.poly_type == (int)CsPram.PICKTYPE.旋转矩形 && csp.is_moreselect)
 						{
+							Point2f[] rbox_vertex = pick_feat.poly_rbox.Points();
 							for (int b = 0; b < 4; b++)
-								Cv2.Line(region_mat, (OpenCvSharp.Point)dict_feat.rbox_vertex[b], (OpenCvSharp.Point)dict_feat.rbox_vertex[(b + 1) % 4], csp.blue_150, csp.izoomVal * 2);
+								Cv2.Line(region_mat, (OpenCvSharp.Point)rbox_vertex[b], (OpenCvSharp.Point)rbox_vertex[(b + 1) % 4], csp.blue_150, csp.izoomVal * 2);
 						}
+
 					}
 				}
 
-				//画出选择
-				if (pick_feat.poly_area > csp.AREA3600)
+                //画出选择
+
+				if (pick_feat.poly_area> csp.AREA3600)
 				{
-					if (pick_feat.line_type == (int)CsPram.PICKTYPE.多边形边 && !csp.is_moreselect)
+					if (pick_feat.poly_type == (int)CsPram.PICKTYPE.多边形边 && !csp.is_moreselect)
 					{
-						int s_id0 = pick_feat.line_id;
-						int s_id1 = (pick_feat.line_id + 1)% pick_feat.poly_gon.Length;
-						Cv2.Line(region_mat, pick_feat.poly_gon[s_id0], pick_feat.poly_gon[s_id1], csp.blue_color, csp.izoomVal);
+						int s_id0 = pick_feat.edge_id;
+						int s_id1 = (pick_feat.edge_id + 1) % pick_feat.poly_points.Length;
+						Cv2.Line(region_mat, pick_feat.poly_points[s_id0], pick_feat.poly_points[s_id1], csp.blue_color, csp.izoomVal);
 					}
-					else if (pick_feat.line_type == (int)CsPram.PICKTYPE.旋转矩形 && csp.is_moreselect)
+					else if (pick_feat.poly_type == (int)CsPram.PICKTYPE.旋转矩形 && csp.is_moreselect)
 					{
+						Point2f[] rbox_vertex = pick_feat.poly_rbox.Points();
 						for (int b = 0; b < 4; b++)
 						{
-							Cv2.Line(region_mat, (OpenCvSharp.Point)pick_feat.rbox_vertex[b], (OpenCvSharp.Point)pick_feat.rbox_vertex[(b + 1) % 4], csp.blue_color, csp.izoomVal);
+							Cv2.Line(region_mat, (OpenCvSharp.Point)rbox_vertex[b], (OpenCvSharp.Point)rbox_vertex[(b + 1) % 4], csp.blue_color, csp.izoomVal);
 						}
 					}
 				}
-				
+                
+
 				//编辑信息
-				if (csp.dict_polys.Count == 2)
+				if (csp.dict_cpoly.Count == 2)
 				{
 					float agl = 0;
-                    Cv2.Line(csp.result_image, csp.dict_polys[0].feat.ploy_position, csp.dict_polys[1].feat.ploy_position, csp.cyan_color, csp.izoomVal);
-                    if (!csp.is_moreselect)
-                    {
-						if (csp.dict_polys[0].feat.line_type == (int)CsPram.PICKTYPE.多边形边 && csp.dict_polys[1].feat.line_type == (int)CsPram.PICKTYPE.多边形边)
+
+					Cv2.Line(csp.result_image,csp.dict_cpoly[0].feat.poly_center, csp.dict_cpoly[1].feat.poly_center, csp.cyan_color, csp.izoomVal);
+					if (!csp.is_moreselect)
+					{
+						if (csp.dict_cpoly[0].feat.poly_type == (int)CsPram.PICKTYPE.多边形边 && csp.dict_cpoly[1].feat.poly_type == (int)CsPram.PICKTYPE.多边形边)
 						{
-							OpenCvSharp.Point icorss = CrossPoint(csp.dict_polys[0].feat.gline_pt1, csp.dict_polys[0].feat.gline_pt2,csp.dict_polys[1].feat.gline_pt1, csp.dict_polys[1].feat.gline_pt2);
-							agl = Angle3(icorss, csp.dict_polys[0].feat.ploy_position, csp.dict_polys[1].feat.ploy_position);
+							OpenCvSharp.Point icorss = CrossPoint(csp.dict_cpoly[0].feat.gline_pt1, csp.dict_cpoly[0].feat.gline_pt2, csp.dict_cpoly[1].feat.gline_pt1, csp.dict_cpoly[1].feat.gline_pt2);
+							agl = Angle3(icorss, csp.dict_cpoly[0].feat.poly_center, csp.dict_cpoly[1].feat.poly_center);
 							Cv2.Circle(csp.result_image, icorss, csp.izoomVal * 5, csp.gray_200, csp.izoomVal);
-							Cv2.Line(csp.result_image, csp.dict_polys[0].feat.ploy_position, icorss, csp.gray_200, csp.izoomVal);
-							Cv2.Line(csp.result_image, csp.dict_polys[1].feat.ploy_position, icorss, csp.gray_200, csp.izoomVal);
+							Cv2.Line(csp.result_image, csp.dict_cpoly[0].feat.gline_pt1, icorss, csp.gray_200, csp.izoomVal);
+							Cv2.Line(csp.result_image, csp.dict_cpoly[1].feat.gline_pt1, icorss, csp.gray_200, csp.izoomVal);
 						}
 					}
 					if (csp.is_moreselect)
-                    {
-						if (csp.dict_polys[0].feat.line_type == (int)CsPram.PICKTYPE.旋转矩形 || csp.dict_polys[1].feat.line_type == (int)CsPram.PICKTYPE.旋转矩形)
+					{
+						if (csp.dict_cpoly[0].feat.poly_type == (int)CsPram.PICKTYPE.旋转矩形 || csp.dict_cpoly[1].feat.poly_type == (int)CsPram.PICKTYPE.旋转矩形)
 						{
-							if (csp.dict_polys[0].feat.ploy_position.Y > csp.dict_polys[1].feat.ploy_position.Y)
-								agl = Angle2(csp.dict_polys[0].feat.ploy_position, csp.dict_polys[1].feat.ploy_position, 180);
+							if (csp.dict_cpoly[0].feat.poly_center.Y > csp.dict_cpoly[1].feat.poly_center.Y)
+								agl = Angle2(csp.dict_cpoly[0].feat.poly_center, csp.dict_cpoly[1].feat.poly_center, 180);
 							else
-								agl = Angle2(csp.dict_polys[1].feat.ploy_position, csp.dict_polys[0].feat.ploy_position, 180);
+								agl = Angle2(csp.dict_cpoly[1].feat.poly_center, csp.dict_cpoly[0].feat.poly_center, 180);
 						}
 					}
 					csdata.obj2angle = agl;
-					csdata.obj2distance = Distance(csp.dict_polys[0].feat.ploy_position, csp.dict_polys[1].feat.ploy_position);
-                }
+					csdata.obj2distance = Distance(csp.dict_cpoly[0].feat.poly_center, csp.dict_cpoly[1].feat.poly_center);
+				}
 
 				//填充数据
-				csdata.UpdateDatas(csp.dict_polys.Count);
+				csdata.UpdateDatas(csp.dict_cpoly.Count);//vvv5
 			}
-			csp.some_rects[region_index].csdata = csdata;
+            
+			csp.some_rects[region_index].csdata = csdata;//vvv4
 
 			//更新选择
-			for (int n = 0; n < csp.dict_polys.Count; n++)
+			for (int n = 0; n < csp.dict_cpoly.Count; n++)
 			{
-				if (csp.dict_polys[n].rect.Size == region_rect.Size)
+				if (csp.dict_cpoly[n].region.Size == region_rect.Size)
 				{
 					for (int m = 0; m < curr_feats.Count; m++)
 					{
-						if (TestScore(csp.dict_polys[n].feat, curr_feats[m], csp.alike60))
+						if (TestScore(csp.dict_cpoly[n].feat, curr_feats[m], csp.alike60))
 						{
-							if (csp.dict_polys.Count * curr_feats.Count > 0)
-							{
-								csp.dict_polys[n].feat.polyUpdate(curr_feats[m], region_mat);
-							}
-							else
-							{
-								//线程之间数据不同步引起"更新数据错误!!!";
-							}
+							csp.dict_cpoly[n].feat.PolyUpdate(curr_feats[m]);
 						}
-						// 	Cv2.PutText(csp.result_image,("%" + curr_feats[m].poly_ratio), curr_feats[m].ploy_position,
+						// Cv2.PutText(csp.result_image,("%" + curr_feats[m].poly_ratio), curr_feats[m].ploy_position,
 					}
 				}
 			}
@@ -648,6 +629,26 @@ namespace Cs_Vision
 			Cv2.NamedWindow(result_name, WindowFlags.Normal);
 			Cv2.ImShow(result_name, pano);
 
+		}
+
+
+		public int RegionLight(Mat mat)
+		{
+			int ivalue = 0;
+			Mat img = new Mat();
+			Cv2.Resize(mat, img, new OpenCvSharp.Size(8, 8));
+			for (int r = 0; r < 8; r++)
+			{
+				for (int c = 0; c < 8; c++)
+				{
+					unsafe
+					{
+						byte* ptr = (byte*)img.Ptr(r, c);
+						ivalue += ((ptr[0] + ptr[1] + ptr[2]) / 3);
+					}
+				}
+			}
+			return (ivalue / 64);
 		}
 
 	}
