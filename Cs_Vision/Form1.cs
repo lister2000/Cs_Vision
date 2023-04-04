@@ -12,6 +12,7 @@ using OpenCvSharp;
 using System.Threading;
 using OpenCvSharp.Dnn;
 using System.Text.RegularExpressions;
+
 namespace Cs_Vision
 {
     public partial class MainWindow : Form
@@ -38,6 +39,7 @@ namespace Cs_Vision
         private void Form1_Load(object sender, EventArgs e)
         {
             csp.frame_image = Cv2.ImRead("test.jpg");
+            Console.WriteLine(csp.frame_image.Size());
             this.Width = pictureBox1.Width + panel_leftside.Width + 2;
             csp.bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(csp.frame_image);
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -72,6 +74,8 @@ namespace Cs_Vision
                 csp.pick_point = new OpenCvSharp.Point(cv_x, cv_y);
                 csp.last_point = new OpenCvSharp.Point(cv_x, cv_y);
                 csp.curr_point = new OpenCvSharp.Point(cv_x, cv_y);
+
+
 
                 if (e.Button == MouseButtons.Middle && csp.hsv_image != null)
                 {
@@ -113,23 +117,31 @@ namespace Cs_Vision
                     csp.draw_rect.Y = Math.Min(cv_y, csp.pick_point.Y);
                     csp.draw_rect.Width = Math.Abs(cv_x - csp.pick_point.X);
                     csp.draw_rect.Height = Math.Abs(cv_y - csp.pick_point.Y);
+                    if (!csp.is_zoomregion)
+                    {
+                        if (cst.InRectangle(csp.curr_point, csp.pickregion.region)
+                        && Math.Abs(csp.curr_point.X - csp.pickregion.region.X - csp.pickregion.region.Width / 2) < csp.pickregion.region.Width / 4
+                        && Math.Abs(csp.curr_point.Y - csp.pickregion.region.Y - csp.pickregion.region.Height / 2) < csp.pickregion.region.Height / 4)
+                        {
+                            csp.draw_rect.Width = csp.draw_rect.Height = 0;
+                        }
+                        else
+                        {
+                            csp.is_moveregion = false;
+                        }
+                        if (csp.draw_rect.Width * csp.draw_rect.Height > csp.AREA3600)
+                        {
+                            csp.draw_rect = cst.Urect(csp.draw_rect, new Rect(0, 0, csp.frame_image.Cols, csp.frame_image.Rows));
+                            csp.pickregion.region = csp.draw_rect;
+                            csp.pickregion.type = 2;
+                        }
+                    }
+                }
 
-                    if (cst.InRectangle(csp.curr_point, csp.pickregion.region) 
-                       && Math.Abs(csp.curr_point.X - csp.pickregion.region.X - csp.pickregion.region.Width / 2) < csp.pickregion.region.Width / 4 
-                       && Math.Abs(csp.curr_point.Y - csp.pickregion.region.Y - csp.pickregion.region.Height/ 2) < csp.pickregion.region.Height/ 4)
-                    {
-                        csp.draw_rect.Width = csp.draw_rect.Height = 0;
-                    }
-                    else
-                    {
-                        csp.is_moveregion = false;
-                    }
-                   if (csp.draw_rect.Width * csp.draw_rect.Height > csp.AREA3600)
-                   {
-                       csp.draw_rect = cst.Urect(csp.draw_rect, new Rect(0, 0, csp.frame_image.Cols, csp.frame_image.Rows));
-                       csp.pickregion.region = csp.draw_rect;
-                       csp.pickregion.type = 2;
-                   }
+                if (e.Button == MouseButtons.Middle)
+                {
+                    csp.is_zoomregion = true;
+                    csp.zoompos = csp.curr_point;
                 }
             }
         }
@@ -143,6 +155,7 @@ namespace Cs_Vision
                 csp.is_drawregion = false;
                 csp.is_moveregion = false;
                 //处理中键事件
+
                 if (e.Button == MouseButtons.Right)
                 {
                     if (cst.InRectangle(csp.curr_point, csp.pickregion.region)&&
@@ -161,7 +174,7 @@ namespace Cs_Vision
                     }
                 }
                 //添加处理区域
-                if (csp.draw_rect.Width * csp.draw_rect.Height > csp.AREA3600)
+                if (csp.draw_rect.Width * csp.draw_rect.Height > csp.AREA3600 && !csp.is_zoomregion)
                 {
                     csp.pickregion.index = csp.some_rects.Count;
                     if (csp.is_trackeron)
@@ -178,14 +191,15 @@ namespace Cs_Vision
                     }
                 }
             }
+            csp.is_zoomregion = false;
         }
 
         private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
         {
             e.Cancel = false;
-            // DialogResult result = MessageBox.Show("确定退出", "提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-            //if (result == DialogResult.Yes) e.Cancel = false; 
-            // else  e.Cancel = true; 
+            DialogResult result = MessageBox.Show("确定退出", "提示", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+            if (result == DialogResult.Yes) e.Cancel = false; 
+            else  e.Cancel = true; 
         }
 
         private void 重置参数ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -234,25 +248,18 @@ namespace Cs_Vision
                 if (csp.run_reset)
                 {
                     //跨线程数据同步
-                    csp.run_reset = false;
-                    csp.is_trackeron = csp.is_trackerrun = false;
+                    csp.run_reset = csp.is_trackeron = csp.is_trackerrun = false;
                     csp.draw_rect = csp.pickregion.region = new Rect();
-                    csp.some_rects.Clear();
-                    csp.dict_cpoly.Clear();
-
+                    csp.some_rects.Clear();csp.dict_cpoly.Clear();
                 }
                 if (csp.is_loaddatas)
                 {
-                    //跨线程数据同步
-                    csp.is_trackeron = csp.is_trackerrun = false;
+                    csp.is_loaddatas = csp.is_trackeron = csp.is_trackerrun = false;
                     csp.draw_rect = csp.pickregion.region = new Rect();
-                    csp.some_rects.Clear();
-                    csp.dict_cpoly.Clear();
-                    csp.is_loaddatas = false;
-                    csp.some_rects=  PolyClass.LoadSomeRects("rect_datas");
+                    csp.some_rects.Clear();csp.dict_cpoly.Clear();
+                    csp.some_rects = PolyClass.LoadSomeRects("rect_datas");
                     csp.dict_cpoly = PolyClass.LoadDictPoly("dict_datas");
                     csp.pickregion = PolyClass.pick_irect;
-
                     for (int i = 0; i < csp.some_rects.Count; i++)
                     {
                         if (csp.some_rects[i].type == 1)
@@ -270,13 +277,40 @@ namespace Cs_Vision
                         csp.videocap.Read(csp.frame_image);
                     }
                     csp.izoomVal = csp.frame_image.Cols / 320;
+
                     Cv2.CopyTo(csp.frame_image, csp.result_image);
-                    Cv2.CvtColor(csp.frame_image, csp.hsv_image, ColorConversionCodes.BGR2HSV);
+
+                    if (csp.is_zoomregion || on_camera)
+                    {
+                        int H = csp.frame_image.Rows;
+                        int W = csp.frame_image.Cols;
+
+                        int zH = (int)(H / csp.zoomraito);
+                        int zW = (int)(W / csp.zoomraito);
+                        int newX = csp.zoompos.X - zW / 2;
+                        int newY = csp.zoompos.Y - zH / 2;
+
+                       if (newX < 0) newX = 0;
+                       if (newY < 0) newY = 0;
+                       if (newX + W / csp.zoomraito > W) newX = W - zW;
+                       if (newY + H / csp.zoomraito > H) newY = H - zH;
+
+                        csp.zoomrect = new Rect(newX, newY, zW, zH);
+                        csp.zoomimage = csp.result_image.Clone(csp.zoomrect);
+                        Cv2.Resize(csp.zoomimage, csp.zoomimage, new OpenCvSharp.Size(W, H));
+                    }
+                    if (csp.zoomimage.Size() == csp.result_image.Size())
+                    {
+                        csp.result_image = csp.zoomimage.Clone();
+                    }
+                    Cv2.CvtColor(csp.result_image, csp.hsv_image, ColorConversionCodes.BGR2HSV);
+
+
                     if (csp.pickregion.region.Width * csp.pickregion.region.Height > csp.AREA3600||csp.some_rects.Count>0)
                     {
                         for (int i = 0; i < csp.some_rects.Count; i++)
                         {
-                            Mat itemp  = new Mat(csp.frame_image, csp.some_rects[i].rect);
+                            Mat itemp  = new Mat(csp.result_image, csp.some_rects[i].rect);
                             Mat icolor = new Mat(csp.result_image, csp.some_rects[i].rect);
                             Mat imask  = new Mat(csp.some_rects[i].rect.Size, MatType.CV_8UC1);
                             if (csp.some_rects[i].color != new Vec3b())
@@ -651,6 +685,7 @@ namespace Cs_Vision
                 }
             }
         }
+
         private void Only_Number_KeyPress(object sender, KeyPressEventArgs e)
         {
             TextBox txtBox = (TextBox)sender;
@@ -668,28 +703,15 @@ namespace Cs_Vision
                 {
                     if (e.KeyChar == '-')
                     {
-                        if (txtBox.SelectionStart != 0)
-                        {
-                            e.Handled = true;
-                        }
-                        else
-                        {
-                            strInput = e.KeyChar.ToString() + strInput;
-                        }
+                        if (txtBox.SelectionStart != 0)    e.Handled = true;
+                        else  strInput = e.KeyChar.ToString() + strInput;
                     }
-                    else
-                    {
-                        strInput = strInput + e.KeyChar.ToString();
-                    }
+                    else   strInput = strInput + e.KeyChar.ToString();
                 }
-
-                if (!regex.IsMatch(strInput))
-                {
-                    e.Handled = true;
-                }
+                if (!regex.IsMatch(strInput))  e.Handled = true;
 
             }
-            if (e.KeyChar == 46)                       //小数点
+            if (e.KeyChar == 46)                 //小数点
             {
                 if (txtBox.Text.Length <= 0)
                     e.Handled = true;           //小数点不能在第一位
@@ -702,10 +724,8 @@ namespace Cs_Vision
                     b2 = float.TryParse(txtBox.Text + e.KeyChar.ToString(), out f);
                     if (b2 == false)
                     {
-                        if (b1 == true)
-                            e.Handled = true;
-                        else
-                            e.Handled = false;
+                        if (b1 == true)  e.Handled = true;
+                        else   e.Handled = false;
                     }
                 }
             }
@@ -718,7 +738,6 @@ namespace Cs_Vision
                 groupBox2.Text = csp.namedatas[text_id];
                 cur_textBox.Text= csp.current_csdata.markdatas[text_id].ToString();
             }
-
         }
 
         private void 保存ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -731,12 +750,20 @@ namespace Cs_Vision
         private void 读取ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             csp.is_loaddatas = true;
-  
         }
 
-        //protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        //{
-        //    return true;//取消键盘响应
-        //}
+        private void 放大ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            csp.is_zoomregion = true;
+            csp.zoompos = new OpenCvSharp.Point(csp.frame_image.Width/2, csp.frame_image.Height / 2);
+            if (csp.zoomraito<4) csp.zoomraito += 0.2f;
+        }
+
+        private void 缩小ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            csp.is_zoomregion = true;
+            csp.zoompos = new OpenCvSharp.Point(csp.frame_image.Width / 2, csp.frame_image.Height / 2);
+            if (csp.zoomraito >= 1.2f) csp.zoomraito -= 0.2f;
+        }
     }
 }

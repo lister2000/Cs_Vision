@@ -5,6 +5,8 @@
 //using OpenCvSharp.Extensions;
 using OpenCvSharp;
 using System.Collections.Generic;
+using Size = OpenCvSharp.Size;
+using Point = OpenCvSharp.Point;
 namespace Cs_Vision
 {
 	public class CsPram
@@ -35,6 +37,8 @@ namespace Cs_Vision
 		public Mat hsv_image = new();
 		public Bitmap bitmap = new(1,1);
 
+
+
 		public RotatedRect rbb=new RotatedRect();
 
 		public Scalar black_color  = new Scalar(0, 0, 0);
@@ -64,6 +68,12 @@ namespace Cs_Vision
 		public bool is_trackeron  = false;
 		public bool is_trackerrun = false;
 		public bool is_loaddatas = false;
+		public bool is_zoomregion = false;
+		public Rect zoomrect = new Rect();
+		public float zoomraito = 2f;
+		public Point zoompos = new Point();
+
+		public Mat zoomimage = new Mat();
 
 		public string[] namedatas = new string[9] { "位置 X","距离 D","亮度 L", "位置 Y", "面积 S", "数量 N", "角度 A", "宽度 W", "高度 H" };
 		public int izoomVal = 3;
