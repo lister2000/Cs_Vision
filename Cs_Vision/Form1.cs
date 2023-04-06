@@ -39,7 +39,6 @@ namespace Cs_Vision
         private void Form1_Load(object sender, EventArgs e)
         {
             csp.frame_image = Cv2.ImRead("test.jpg");
-            Console.WriteLine(csp.frame_image.Size());
             this.Width = pictureBox1.Width + panel_leftside.Width + 2;
             csp.bitmap = OpenCvSharp.Extensions.BitmapConverter.ToBitmap(csp.frame_image);
             pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -756,14 +755,14 @@ namespace Cs_Vision
         {
             csp.is_zoomregion = true;
             csp.zoompos = new OpenCvSharp.Point(csp.frame_image.Width/2, csp.frame_image.Height / 2);
-            if (csp.zoomraito<4) csp.zoomraito += 0.2f;
+            if (csp.zoomraito < 4) csp.zoomraito += 0.5f;
         }
 
         private void ËõÐ¡ToolStripMenuItem_Click(object sender, EventArgs e)
         {
             csp.is_zoomregion = true;
             csp.zoompos = new OpenCvSharp.Point(csp.frame_image.Width / 2, csp.frame_image.Height / 2);
-            if (csp.zoomraito >= 1.2f) csp.zoomraito -= 0.2f;
+            if (csp.zoomraito >= 1.5f) csp.zoomraito -= 0.5f;
         }
     }
 }
