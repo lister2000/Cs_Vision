@@ -26,7 +26,8 @@ namespace Cs_Vision
         CsTools cst = CsTools.Instance;
         private TimerComponent timerComponent;
         private Thread timerThread;
-        List <TextBox> list_textboxes = new List <TextBox>(); 
+        List <TextBox> list_textboxes = new List <TextBox>();
+        ColorDetector cdetect = new ColorDetector();
         public MainWindow()
         {
             InitializeComponent();
@@ -239,7 +240,7 @@ namespace Cs_Vision
             }
         }
 
-        ColorDetector cdetect = new ColorDetector();
+     
         private void RunOpencv()
         {
             //while (on_opencv)
@@ -497,7 +498,7 @@ namespace Cs_Vision
                 {
                     if (csp.some_rects[n].index == csp.pickregion.index)
                     {
-                        csp.current_csdata = csp.some_rects[n].csdata;//vvv3
+                        csp.current_csdata = csp.some_rects[n].csdata;
                         data_textBox1.Text = csp.current_csdata.markdatas[0].ToString();
                         data_textBox2.Text = csp.current_csdata.markdatas[1].ToString();
                         data_textBox3.Text = csp.current_csdata.markdatas[2].ToString();
@@ -507,6 +508,11 @@ namespace Cs_Vision
                         data_textBox7.Text = csp.current_csdata.markdatas[6].ToString();
                         data_textBox8.Text = csp.current_csdata.markdatas[7].ToString();
                         data_textBox9.Text = csp.current_csdata.markdatas[8].ToString();
+
+                        if (csp.current_csdata.data_feat.useful == false)
+                        {
+                            Array.Clear(csp.some_rects[n].csdata.markdatas, 0, csp.some_rects[n].csdata.markdatas.Length);
+                        }
 
                         for (int i = 0; i < 9; i++)
                         {
@@ -522,8 +528,10 @@ namespace Cs_Vision
                         }
                     }
 
+
                     for (int i = 0; i < 9; i++)
                     {
+
                         if (csp.some_rects[n].csdata.markdatas[i] <= csp.some_rects[n].maxdatas[i] &&
                             csp.some_rects[n].csdata.markdatas[i] >= csp.some_rects[n].mindatas[i])
                         {
@@ -542,6 +550,7 @@ namespace Cs_Vision
                             }
                             break;
                         }
+
                     }
                 }
             }

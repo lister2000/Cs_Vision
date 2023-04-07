@@ -86,10 +86,7 @@ namespace Cs_Vision
 		public int  run_mode = 0;
 		public bool run_loop = true;
 		public bool run_reset  = false;
-
 		public VideoCapture videocap = new VideoCapture(0);
-
-		///public CsDatas? current_csdata;//vvv1
 		public CcDatas? current_csdata;
 		public Mat cam_coodinate_mat = new Mat(9, 2, MatType.CV_64F, new Scalar(0));
 		public Mat rot_coodinate_mat = new Mat(9, 2, MatType.CV_64F, new Scalar(0));
@@ -132,7 +129,7 @@ namespace Cs_Vision
 		public Vec3b color;
 		[NonSerialized]
 		public AsDll.AsDlib tracker = new AsDll.AsDlib();
-		public CcDatas csdata  = new CcDatas();//vvv
+		public CcDatas csdata  = new CcDatas();
 		public float[] mindatas = new float[9];
 		public float[] maxdatas = new float[9];
 

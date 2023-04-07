@@ -29,7 +29,7 @@ namespace Cs_Vision
 		public double    poly_area = 0; 
 		public double  poly_circum = 0;
 		public double   poly_alike = 0;
-
+		public bool     useful = true;
 		public static pick_rect pick_irect = new pick_rect();
 		public PolyClass()
 		{

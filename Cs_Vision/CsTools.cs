@@ -257,7 +257,11 @@ namespace Cs_Vision
 					}
 				}
 			}
-			if (curr_feats.Count <= 0) return;
+			if (curr_feats.Count <= 0)
+			{
+				Array.Clear(csp.some_rects[region_index].csdata.markdatas,0, csp.some_rects[region_index].csdata.markdatas.Length);
+				return;
+			}
 
 			//选择数据
 			if (csp.is_mouseclick && InRectangle(csp.curr_point, region_rect))
@@ -410,23 +414,32 @@ namespace Cs_Vision
 				}
 
 				//填充数据
-				csdata.UpdateDatas(csp.dict_cpoly.Count);//vvv5
+				csdata.UpdateDatas(csp.dict_cpoly.Count);
 			}
             
-			csp.some_rects[region_index].csdata = csdata;//vvv4
+			csp.some_rects[region_index].csdata = csdata;
 
 			//更新选择
 			for (int n = 0; n < csp.dict_cpoly.Count; n++)
 			{
 				if (csp.dict_cpoly[n].region.Size == region_rect.Size)
 				{
+					int nloss = 0;
+
 					for (int m = 0; m < curr_feats.Count; m++)
 					{
 						if (TestScore(csp.dict_cpoly[n].feat, curr_feats[m], csp.alike60))
 						{
+							nloss++;	
 							csp.dict_cpoly[n].feat.PolyUpdate(curr_feats[m]);
+							csp.dict_cpoly[n].feat.useful = true;
 						}
+   
 						// Cv2.PutText(csp.result_image,("%" + curr_feats[m].poly_ratio), curr_feats[m].ploy_position,
+					}
+                    if (nloss == 0)
+                    {
+						csp.dict_cpoly[n].feat.useful = false;
 					}
 				}
 			}
