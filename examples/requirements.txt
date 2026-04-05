@@ -1,0 +1,6 @@
+# Runtime dependencies for pose_tracking_webcam.py
+# Install with:  pip install -r requirements.txt
+
+onnxruntime>=1.16.0
+opencv-python>=4.8.0
+numpy>=1.24.0
