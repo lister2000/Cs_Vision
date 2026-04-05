@@ -316,6 +316,15 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Python virtual environments
+.venv/
+venv/
+
+# Large model weight files (download separately, see models/README.md)
+*.onnx
+*.pt
+*.pth
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config

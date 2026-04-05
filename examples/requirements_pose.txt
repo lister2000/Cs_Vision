@@ -1,0 +1,11 @@
+# Python dependencies for the pose-tracking webcam demo
+# Install with:
+#   pip install -r examples/requirements_pose.txt
+
+# Core computer-vision + inference stack
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# ONNXRuntime — pick ONE of the two lines below:
+onnxruntime>=1.17.0          # CPU-only (works on any Windows machine)
+# onnxruntime-gpu>=1.17.0    # NVIDIA GPU acceleration (CUDA 11.8+)
