@@ -60,6 +60,13 @@ _TRACK_PALETTE: List[Tuple[int, int, int]] = [
 ]
 
 
+# Small epsilon to guard against degenerate zero-area boxes in IoU computation.
+_EPSILON: float = 1e-9
+
+# NMS overlap threshold used for YOLO-Pose post-processing.
+_NMS_THRESHOLD: float = 0.45
+
+
 def _track_color(track_id: int) -> Tuple[int, int, int]:
     return _TRACK_PALETTE[(track_id - 1) % len(_TRACK_PALETTE)]
 
@@ -76,8 +83,8 @@ def _iou(b1: np.ndarray, b2: np.ndarray) -> float:
     inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
     if inter == 0.0:
         return 0.0
-    a1 = max(1e-9, (b1[2] - b1[0]) * (b1[3] - b1[1]))
-    a2 = max(1e-9, (b2[2] - b2[0]) * (b2[3] - b2[1]))
+    a1 = max(_EPSILON, (b1[2] - b1[0]) * (b1[3] - b1[1]))
+    a2 = max(_EPSILON, (b2[2] - b2[0]) * (b2[3] - b2[1]))
     return float(inter / (a1 + a2 - inter))
 
 
@@ -206,7 +213,7 @@ class _MoveNetMultiPose:
         self._sess = ort.InferenceSession(model_path, providers=providers)
         inp = self._sess.get_inputs()[0]
         self._iname: str = inp.name
-        # Derive input spatial size from the model graph (default 256)
+        # axis=1 is the H dimension in [1, H, W, 3] (MoveNet NHWC layout)
         self._size: int = _spatial_size_from_shape(inp.shape, axis=1, default=256)
 
     def infer(
@@ -262,7 +269,7 @@ class _YOLOPose:
         self._sess = ort.InferenceSession(model_path, providers=providers)
         inp = self._sess.get_inputs()[0]
         self._iname: str = inp.name
-        # Derive input spatial size from the model graph (default 640)
+        # axis=2 is the H dimension in [1, 3, H, W] (YOLO NCHW layout)
         self._size: int = _spatial_size_from_shape(inp.shape, axis=2, default=640)
 
     def infer(
@@ -302,7 +309,7 @@ class _YOLOPose:
         indices = cv2.dnn.NMSBoxes(
             boxes_xywh, scores,
             score_threshold=float(conf_thresh),
-            nms_threshold=0.45,
+            nms_threshold=_NMS_THRESHOLD,
         )
         if len(indices) == 0:
             return np.zeros((0, 4), np.float32), np.zeros((0, NUM_KP, 3), np.float32)
@@ -511,6 +518,8 @@ def main() -> None:
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  args.width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+    # Buffer size of 1 discards queued frames so we always process the latest
+    # camera frame, minimising end-to-end latency.
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     tracker = PoseTracker(max_age=args.max_age, iou_thresh=args.iou_thresh)
