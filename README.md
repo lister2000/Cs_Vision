@@ -77,7 +77,7 @@ Press **`q`** in the window to quit.
 ### What you should see
 
 - Live webcam feed with **coloured skeleton keypoints + limb lines** overlaid on each person.
-- Each person has a **`ID N`** label that stays stable as they move or temporarily leave the frame.
+- Each person has an **`ID N`** label that stays stable as they move or temporarily leave the frame.
 - **FPS counter** in the top-left corner.
 
 ### Verification checklist

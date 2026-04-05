@@ -19,6 +19,7 @@ Keyboard shortcuts (while the window is open):
 """
 
 import argparse
+import os
 import time
 from collections import OrderedDict
 from typing import Dict, List, Tuple
@@ -295,7 +296,6 @@ def main():
     args = parser.parse_args()
 
     # Load ONNX model
-    import os
     if not os.path.isfile(args.model):
         raise FileNotFoundError(
             f"\n[ERROR] Model not found: {args.model}\n"
@@ -352,7 +352,7 @@ def main():
 
         # FPS overlay
         elapsed = time.perf_counter() - t0
-        fps_buf.append(1.0 / max(elapsed, 1e-6))
+        fps_buf.append(1.0 / max(elapsed, 1e-3))
         if len(fps_buf) > 30:
             fps_buf.pop(0)
         fps = sum(fps_buf) / len(fps_buf)
