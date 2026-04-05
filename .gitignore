@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ONNX model files (download separately – see models/README.md)
+*.onnx
+
+# Python virtual environments and caches
+.venv/
+venv/
+*.pyc
+__pycache__/
