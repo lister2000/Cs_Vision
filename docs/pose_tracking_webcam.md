@@ -49,31 +49,38 @@ MoveNet MultiPose 单次推理最多检测 6 人，模型体积更小（~3 MB）
 > **前提：** 需要安装 `tensorflow`（或 `tflite-runtime`）及 `tf2onnx`。
 
 ```powershell
-pip install tensorflow tf2onnx
+pip install tensorflow tf2onnx tensorflow-hub
+```
 
-# 1. 下载 TFLite 模型（通过 TF Hub 或 tf.saved_model）
-python - << 'EOF'
+**步骤 1** — 将以下代码保存为 `download_movenet.py` 并运行：
+
+```python
+# download_movenet.py
 import tensorflow as tf
 import tensorflow_hub as hub
 
-# 加载 SavedModel 格式
 model = hub.load("https://tfhub.dev/google/movenet/multipose/lightning/1")
 tf.saved_model.save(model, "movenet_multipose_saved")
-EOF
+print("SavedModel saved to: movenet_multipose_saved/")
+```
 
-# 2. 转换为 ONNX
-python -m tf2onnx.convert \
-    --saved-model movenet_multipose_saved \
-    --output models/movenet_multipose.onnx \
+```powershell
+python download_movenet.py
+```
+
+**步骤 2** — 转换为 ONNX：
+
+```powershell
+python -m tf2onnx.convert `
+    --saved-model movenet_multipose_saved `
+    --output models/movenet_multipose.onnx `
     --opset 13
+```
 
-# （可选）验证
-python -c "
-import onnxruntime as ort
-sess = ort.InferenceSession('models/movenet_multipose.onnx')
-print('Input :', sess.get_inputs()[0].shape)
-print('Output:', sess.get_outputs()[0].shape)
-"
+**步骤 3（可选）** — 验证：
+
+```powershell
+python -c "import onnxruntime as ort; sess = ort.InferenceSession('models/movenet_multipose.onnx'); print('Input:', sess.get_inputs()[0].shape); print('Output:', sess.get_outputs()[0].shape)"
 ```
 
 生成文件：`models\movenet_multipose.onnx`（约 3 MB）。
@@ -115,26 +122,26 @@ python examples\pose_tracking_webcam.py --model models\movenet_multipose.onnx
 ### 调整摄像头与分辨率
 
 ```powershell
-python examples\pose_tracking_webcam.py \
-    --model models\yolov8n-pose.onnx \
-    --camera 1 \
+python examples\pose_tracking_webcam.py `
+    --model models\yolov8n-pose.onnx `
+    --camera 1 `
     --width 1920 --height 1080
 ```
 
 ### 调整检测阈值
 
 ```powershell
-python examples\pose_tracking_webcam.py \
-    --model models\yolov8n-pose.onnx \
-    --conf 0.45 \
+python examples\pose_tracking_webcam.py `
+    --model models\yolov8n-pose.onnx `
+    --conf 0.45 `
     --kp-conf 0.35
 ```
 
 ### GPU 加速（需 onnxruntime-gpu + CUDA）
 
 ```powershell
-python examples\pose_tracking_webcam.py \
-    --model models\yolov8n-pose.onnx \
+python examples\pose_tracking_webcam.py `
+    --model models\yolov8n-pose.onnx `
     --gpu
 ```
 

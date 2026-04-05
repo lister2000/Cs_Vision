@@ -25,6 +25,7 @@ Press  q / Esc  to quit,  b  to toggle bounding-box overlay.
 """
 
 import argparse
+import platform
 import sys
 import time
 from pathlib import Path
@@ -176,6 +177,15 @@ class PoseTracker:
 
 
 # ---------------------------------------------------------------------------
+# Shared ONNX helper
+# ---------------------------------------------------------------------------
+def _spatial_size_from_shape(shape, axis: int, default: int) -> int:
+    """Return the spatial dimension at *axis* if it is a fixed integer, else *default*."""
+    val = shape[axis] if len(shape) > axis else None
+    return int(val) if isinstance(val, int) and val > 0 else default
+
+
+# ---------------------------------------------------------------------------
 # Model backend: MoveNet MultiPose Lightning
 # ---------------------------------------------------------------------------
 class _MoveNetMultiPose:
@@ -196,9 +206,8 @@ class _MoveNetMultiPose:
         self._sess = ort.InferenceSession(model_path, providers=providers)
         inp = self._sess.get_inputs()[0]
         self._iname: str = inp.name
-        shape = inp.shape
         # Derive input spatial size from the model graph (default 256)
-        self._size: int = int(shape[1]) if isinstance(shape[1], int) and shape[1] > 0 else 256
+        self._size: int = _spatial_size_from_shape(inp.shape, axis=1, default=256)
 
     def infer(
         self,
@@ -253,8 +262,8 @@ class _YOLOPose:
         self._sess = ort.InferenceSession(model_path, providers=providers)
         inp = self._sess.get_inputs()[0]
         self._iname: str = inp.name
-        shape = inp.shape
-        self._size: int = int(shape[2]) if isinstance(shape[2], int) and shape[2] > 0 else 640
+        # Derive input spatial size from the model graph (default 640)
+        self._size: int = _spatial_size_from_shape(inp.shape, axis=2, default=640)
 
     def infer(
         self,
@@ -485,10 +494,13 @@ def main() -> None:
         sys.exit(1)
 
     # ---- open webcam ----
-    # CAP_DSHOW is the preferred Windows backend for lower latency
-    cap = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(args.camera)   # fallback without backend hint
+    # On Windows use DirectShow (CAP_DSHOW) for lower latency; fall back on others
+    if platform.system() == "Windows":
+        cap = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(args.camera)
+    else:
+        cap = cv2.VideoCapture(args.camera)
     if not cap.isOpened():
         print(
             f"ERROR: Cannot open camera (index={args.camera}).\n"
