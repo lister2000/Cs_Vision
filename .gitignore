@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Pose-tracking example: downloaded ONNX model files (not distributed with the repo)
+examples/models/
