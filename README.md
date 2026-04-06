@@ -129,7 +129,7 @@ Press **Q** to quit.
 
 ### 5 — Acceptance checklist
 
-After the window opens, verify all three:
+After the window opens, verify all five:
 
 - [ ] Webcam feed is visible and updates continuously.
 - [ ] Skeleton keypoints (dots) and limb connections (lines) are drawn over each detected person.
