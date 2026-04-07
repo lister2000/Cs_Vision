@@ -64,8 +64,6 @@ SKELETON = [
     (12, 14), (14, 16),          # right leg
 ]
 
-# YOLOv8-pose expects a square input of this size (pixels)
-INPUT_SIZE = 640
 
 # 17 distinct BGR colours, cycling by track_id
 _PALETTE = [
