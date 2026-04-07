@@ -64,6 +64,7 @@ SKELETON = [
     (12, 14), (14, 16),          # right leg
 ]
 
+
 # 17 distinct BGR colours, cycling by track_id
 _PALETTE = [
     (255, 56,  56),  (255, 157, 151), (255, 112, 31),  (255, 178, 29),

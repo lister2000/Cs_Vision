@@ -19,6 +19,7 @@
 
 ---
 
+
 ### 环境要求
 
 | 软件 | 版本要求 |
@@ -92,6 +93,7 @@ python pose_tracking_webcam.py ^
 
 ---
 
+
 ### 参数说明
 
 | 参数 | 默认值 | 说明 |
@@ -121,16 +123,7 @@ examples/
 
 ---
 
-### 常见问题
 
-**Q: 找不到摄像头 / `Cannot open camera index 0`**  
-A: 检查摄像头是否已连接，尝试 `--camera 1` 或更大索引；确认没有其他程序占用。
-
-**Q: 推理很慢 / FPS 很低**  
-A: CPU 模式下 yolov8n-pose 约 5–15 FPS（视硬件）。可降低采集分辨率（`--width 640 --height 480`），或使用 GPU（`onnxruntime-gpu` + `--providers CUDAExecutionProvider CPUExecutionProvider`）。
-
-**Q: 模型文件找不到**  
-A: 程序启动时会打印详细下载指引，请按提示操作。
 
 ---
 
@@ -148,6 +141,7 @@ Key features:
 - **Friendly error messages**: checks model file existence on startup and prints full download/export instructions if missing.
 
 ---
+
 
 ### Requirements
 
@@ -222,6 +216,7 @@ Press **Q** to quit.
 
 ---
 
+
 ### Command-line reference
 
 | Argument | Default | Description |
@@ -254,10 +249,9 @@ examples/
 ### Troubleshooting
 
 **Q: `Cannot open camera index 0`**  
-A: Confirm the webcam is plugged in and not used by another app. Try `--camera 1`.
+
 
 **Q: Low FPS on CPU**  
 A: On CPU, yolov8n-pose runs ~5–15 FPS depending on hardware. Lower the capture resolution (`--width 640 --height 480`) or use an NVIDIA GPU (`onnxruntime-gpu` + `--providers CUDAExecutionProvider CPUExecutionProvider`).
 
-**Q: Model file not found**  
-A: The script prints complete download/export instructions on startup. Follow them to obtain `yolov8n-pose.onnx`.
+
