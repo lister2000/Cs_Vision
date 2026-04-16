@@ -1,0 +1,6 @@
+# Python dependencies for the real-time pose tracking example.
+# Tested on Python 3.9 – 3.11 (Windows 10/11 x64).
+
+mediapipe>=0.10.0
+opencv-python>=4.6.0
+numpy>=1.21.0

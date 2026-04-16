@@ -315,6 +315,19 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+*.pyo
+
+# Python virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# Python packaging / distribution
+*.egg-info/
+dist/
+build/
+*.egg
 
 # Cake - Uncomment if you are using it
 # tools/**
